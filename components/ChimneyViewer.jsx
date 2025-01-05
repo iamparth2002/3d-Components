@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Circle, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { holeData } from '@/data';
 
 // Hole Component
-function Hole({ position, status }) {
+function Hole({ position, status, onClick, realRow, realCol }) {
   // Assuming 'status' is now a blockage percentage between 0 and 1
   const blockagePercentage = status;  // This could come from the AI/ML model
 
@@ -14,7 +15,10 @@ function Hole({ position, status }) {
   const color = new THREE.Color().setHSL(0.33, 1, 0.5 - 0.5 * blockagePercentage); // Green to black based on percentage
 
   return (
-    <mesh position={position}>
+    <mesh
+      position={position}
+      onClick={() => onClick({ status, position, realRow, realCol })} 
+      style={{ cursor: 'pointer' }} >
       <cylinderGeometry args={[0.2, 0.2, 150, 32]} />
       <meshStandardMaterial color={color} />
     </mesh>
@@ -23,7 +27,7 @@ function Hole({ position, status }) {
 
 
 // TubeSheet Component
-function TubeSheet() {
+function TubeSheet({ onHoleClick }) {
   const TUBE_SHEET_RADIUS = 11;
   const HOLE_RADIUS = 0.2;
   const HOLE_SPACING = 1;
@@ -36,37 +40,38 @@ function TubeSheet() {
 
   const createHoles = () => {
     const holes = [];
-    const sampleHolesData = Array.from({ length: 353 }, (_, i) => ({
-      id: i + 1,
-      status: Math.random()
-    }));
+    const sampleHolesData = holeData;
 
     let holeIndex = 0;
     for (let row = 0; row < ROWS; row++) {
       const numColsInRow = rowColumnPattern[row];  // Get the number of columns for the current row
 
-      for (let col = -Math.floor(numColsInRow / 2); col <= Math.floor(numColsInRow / 2); col++) {
+      for (let col = 1; col <= numColsInRow; col++) {  // Start from 1 instead of a negative value
+
         if (holeIndex >= sampleHolesData.length) break;
 
         // Swap and rotate the coordinates (90 degrees rotation)
-        const x = col * HOLE_SPACING;
+        const x = (col - Math.floor(numColsInRow / 2)) * HOLE_SPACING;  // Adjusted to center the columns properly
         const z = (row - Math.floor(ROWS / 2)) * HOLE_SPACING;
-        const newX = z; // 90 degree rotation (swap x and z)
+        const newX = z; // 90-degree rotation (swap x and z)
         const newZ = -x; // Invert the sign of the new x to get proper rotation
 
         const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ);
 
         if (distanceFromCenter <= MAX_DISTANCE_FROM_CENTER) {
           const { status } = sampleHolesData[holeIndex];
-          holes.push({ position: [newX, -74.9, newZ], status });
+          holes.push({
+            position: [newX, -74.9, newZ],
+            status,
+            realRow: row,
+            realCol: col,  // Column will be positive and start from 1
+          });
           holeIndex++;
         }
       }
     }
     return holes;
   };
-
-
 
   const holes = createHoles();
 
@@ -81,7 +86,7 @@ function TubeSheet() {
         />
       </Circle>
       {holes.map((hole, index) => (
-        <Hole key={index} position={hole.position} status={hole.status} />
+        <Hole key={index} position={hole.position} status={hole.status} realRow={hole.realRow} realCol={hole.realCol} onClick={onHoleClick} />
       ))}
     </group>
   );
@@ -378,19 +383,23 @@ function Chimney() {
       <ChimneyBottomValve />
       <MidCylinder />
 
-      {/* <PlateWithCylinders /> */}
-
-
-      <TubeSheet />
+      <TubeSheet onHoleClick={() => { }} />
       <ChimneyBase />
     </group>
   );
 }
 
 // Main Viewer Component
-export default function ChimneyViewer() {
+function ChimneyViewer() {
   const CAMERA_POSITION = [20, 20, 50];
   const CAMERA_FOV = 40;
+  const [selectedHole, setSelectedHole] = useState(null);
+  const [position, setPosition] = useState(null)
+
+  const handleHoleClick = (status) => {
+    setSelectedHole(status);
+    console.log(status)
+  };
 
   return (
     <div className="w-full h-screen flex">
@@ -405,37 +414,35 @@ export default function ChimneyViewer() {
       </div>
 
       {/* Right Panel */}
-      <div style={{ width: '40%', height: '100%', display: 'flex', flexDirection: 'column' }} className=' border-l-2'>
+      <div style={{ width: '40%', height: '100%', display: 'flex', flexDirection: 'column' }} className="border-l-2">
         {/* Top - TubeSheet Canvas */}
-        <div style={{ flex: 1 }} className=' border-b-2 overflow-x-hidden'>
+        <div style={{ flex: 1 }} className="border-b-2 overflow-x-hidden">
           <Canvas camera={{ position: CAMERA_POSITION, fov: 80 }}>
             <directionalLight castShadow position={[10, 20, 15]} intensity={0.8} />
             <ambientLight intensity={0.3} />
-            {/* <PlateWithCylinders /> */}
-            {/* <PlateWithCylindersLower />
-            <MidCylinder /> */}
-            <TubeSheet />
-            {/* <ChimneyBottomValve /> */}
-            <ChimneyBase />
-
+            <TubeSheet onHoleClick={handleHoleClick} />
             <OrbitControls enableZoom enablePan />
           </Canvas>
         </div>
 
-        {/* Bottom - PlateWithCylinders Canvas */}
-        <div style={{ flex: 1 }}>
-            <Canvas camera={{ position: [60, 80, 0], fov: 80 }}>
-              <directionalLight castShadow position={[10, 20, 15]} intensity={0.8} />
-              <ambientLight intensity={0.3} />
-              <TopCylinder />
-              <ChimneyTopValve />
-  
-              <BottomCylinder />
-              <PlateWithCylindersUpper />
-              <OrbitControls enableZoom enablePan/>
-            </Canvas>
+        {/* Bottom Panel - Display Blockage Percentage */}
+        <div style={{ padding: '10px' }}>
+          <h3>Selected Hole Blockage Percentage:</h3>
+
+
+
+          <p>{selectedHole !== null ?
+            <>
+              <p>Blockage Percentage : {(selectedHole?.status * 100).toFixed(2)}%</p>
+              <p>Row : {selectedHole?.realRow + 1}</p>
+              <p> Col : {selectedHole?.realCol}</p>
+            </>
+            :
+            'Click a hole to see the blockage percentage.'}</p>
         </div>
       </div>
     </div>
   );
 }
+
+export default ChimneyViewer;
