@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Circle, Html } from '@react-three/drei';
+import { OrbitControls, Circle, Html, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { holeData } from '@/data';
 
@@ -13,11 +13,11 @@ function Hole({ position, status, onClick, realRow, realCol }) {
 
   // Interpolate between green and black
   const color = new THREE.Color().setHSL(0.33, 1, 0.5 - 0.5 * blockagePercentage); // Green to black based on percentage
-
+  const invertedRow = 17 - realRow - 1
   return (
     <mesh
       position={position}
-      onClick={() => onClick({ status, position, realRow, realCol })} 
+      onClick={() => onClick({ status, position, realRow: invertedRow, realCol })}
       style={{ cursor: 'pointer' }} >
       <cylinderGeometry args={[0.2, 0.2, 150, 32]} />
       <meshStandardMaterial color={color} />
@@ -25,18 +25,51 @@ function Hole({ position, status, onClick, realRow, realCol }) {
   );
 }
 
-
+function Board({ rows, cols, spacing, width, height }) {
+  return (
+    <group>
+      {/* Board */}
+      <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial color="#f0f0f0" side={THREE.DoubleSide} />
+      </mesh>
+      {/* Row and Column Markings */}
+      {/* {Array.from({ length: rows }, (_, rowIndex) => (
+        <Text
+          key={`row-${rowIndex}`}
+          position={[-width / 2 - 0.5, 0, (rowIndex - rows / 2 + 0.5) * spacing]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          fontSize={0.5}
+          color="black"
+        >
+          L {rowIndex + 1}
+        </Text>
+      ))} */}
+      {Array.from({ length: cols }, (_, colIndex) => (
+        <Text
+          key={`col-${colIndex}`}
+          position={[(colIndex - cols / 2 + 0.5) * spacing, 0, height / 2 - 1.5]}
+          rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+          fontSize={0.5}
+          color="black"
+        >
+          Row {cols - colIndex}
+        </Text>
+      ))}
+    </group>
+  );
+}
 // TubeSheet Component
 function TubeSheet({ onHoleClick }) {
   const TUBE_SHEET_RADIUS = 11;
   const HOLE_RADIUS = 0.2;
-  const HOLE_SPACING = 1;
+  const HOLE_SPACING = 0.8;
   const MAX_DISTANCE_FROM_CENTER = 10;
   const ROWS = 17;
   const COLS = 25;
 
   // Column distribution for each row
-  const rowColumnPattern = [7, 15, 19, 22, 25, 25, 25, 25, 25, 25, 25, 25, 25, 22, 19, 15, 7];
+  const rowColumnPattern = [7, 15, 29, 22, 25, 25, 25, 25, 25, 25, 25, 25, 25, 22, 19, 15, 7];
 
   const createHoles = () => {
     const holes = [];
@@ -46,7 +79,7 @@ function TubeSheet({ onHoleClick }) {
     for (let row = 0; row < ROWS; row++) {
       const numColsInRow = rowColumnPattern[row];  // Get the number of columns for the current row
 
-      for (let col = 1; col <= numColsInRow; col++) {  // Start from 1 instead of a negative value
+      for (let col = 1; col <= numColsInRow; col++) {
 
         if (holeIndex >= sampleHolesData.length) break;
 
@@ -77,6 +110,13 @@ function TubeSheet({ onHoleClick }) {
 
   return (
     <group>
+      <Board
+        rows={COLS}
+        cols={ROWS}
+        spacing={HOLE_SPACING}
+        width={25} // Adjust based on TubeSheet dimensions
+        height={28} // Adjust based on TubeSheet dimensions
+      />
       <Circle args={[TUBE_SHEET_RADIUS, 64]} rotation={[-Math.PI / 2, 0, 0]}>
         <meshStandardMaterial
           color="white"
@@ -229,66 +269,7 @@ function ChimneyBottomValve() {
 }
 
 // Plate with Cylinders Component
-// function PlateWithCylinders() {
-//   const PLATE_RADIUS = 11;
-//   const CYLINDER_RADIUS = 2;
-//   const INNER_CYLINDER_RADIUS = 1.8;
-//   const CYLINDER_HEIGHT = 8;
-//   const CYLINDER_POSITIONS = Array.from({ length: 6 }).map((_, i) => {
-//     const angle = (i * Math.PI) / 3; // Distribute 6 cylinders evenly
-//     const x = 7 * Math.cos(angle); // Distance from center
-//     const z = 7 * Math.sin(angle);
-//     return { x, z };
-//   });
 
-//   return (
-//     <group position={[0, 20, 0]}>
-//       {/* Transparent Base Plate */}
-//       <mesh position={[0, 0, 0]}>
-//         <cylinderGeometry args={[PLATE_RADIUS, PLATE_RADIUS, 0.5, 64]} />
-//         <meshStandardMaterial color="red" side={THREE.DoubleSide} />
-//       </mesh>
-
-//       {/* Center Cylinder (Split into Top and Bottom) */}
-//       <group position={[0, 0.5, 0]}>
-//         {/* Top Half */}
-//         <mesh position={[0, CYLINDER_HEIGHT / 4, 0]}>
-//           <cylinderGeometry
-//             args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-//           />
-//           <meshStandardMaterial color="#7e8487" side={THREE.DoubleSide} />
-//         </mesh>
-//         {/* Bottom Half */}
-//         <mesh position={[0, -CYLINDER_HEIGHT / 4, 0]}>
-//           <cylinderGeometry
-//             args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-//           />
-//           <meshStandardMaterial color="#afb6ba" side={THREE.DoubleSide} />
-//         </mesh>
-//       </group>
-
-//       {/* Surrounding Cylinders (Split into Top and Bottom) */}
-//       {CYLINDER_POSITIONS.map((pos, index) => (
-//         <group key={index} position={[pos.x, 0.5, pos.z]}>
-//           {/* Top Half */}
-//           <mesh position={[0, CYLINDER_HEIGHT / 4, 0]}>
-//             <cylinderGeometry
-//               args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-//             />
-//             <meshStandardMaterial color="#7e8487" side={THREE.DoubleSide} />
-//           </mesh>
-//           {/* Bottom Half */}
-//           <mesh position={[0, -CYLINDER_HEIGHT / 4, 0]}>
-//             <cylinderGeometry
-//               args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-//             />
-//             <meshStandardMaterial color="#afb6ba" side={THREE.DoubleSide} />
-//           </mesh>
-//         </group>
-//       ))}
-//     </group>
-//   );
-// }
 function PlateWithCylindersUpper() {
   const CYLINDER_RADIUS = 2;
   const CYLINDER_HEIGHT = 8;
@@ -369,6 +350,34 @@ function PlateWithCylindersLower() {
   );
 }
 
+function DataCard({ position, data }) {
+  return (
+    <Html position={position} style={{ transform: 'translate(-50%, -100%)' }}>
+      <div
+        style={{
+          background: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+          pointerEvents: 'none', // Prevent interaction with the card
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start', // Align text to the left
+          width: '250px', // Set the width of the card
+          gap: '4px', // Add gap between items
+        }}
+      >
+        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>Hole Data</h4>
+        <p style={{ margin: 0 }}>Blockage Percentage: {(data.status * 100).toFixed(2)}%</p>
+        <p style={{ margin: 0 }}>Row: {data.realRow + 1}</p>
+        <p style={{ margin: 0 }}>Tube: {data.realCol}</p>
+      </div>
+    </Html>
+  );
+}
+
+
+
 
 // Chimney Component
 function Chimney() {
@@ -394,11 +403,14 @@ function ChimneyViewer() {
   const CAMERA_POSITION = [20, 20, 50];
   const CAMERA_FOV = 40;
   const [selectedHole, setSelectedHole] = useState(null);
-  const [position, setPosition] = useState(null)
+  const [cardPosition, setCardPosition] = useState(null);
+  const [cardData, setCardData] = useState(null);
 
-  const handleHoleClick = (status) => {
-    setSelectedHole(status);
-    console.log(status)
+  const handleHoleClick = (hole) => {
+    console.log(hole)
+    setSelectedHole(hole);
+    setCardPosition([hole.position[0] + 7, hole.position[1] + 80, hole.position[2]]); // Adjust height as needed
+    setCardData(hole);
   };
 
   return (
@@ -415,31 +427,28 @@ function ChimneyViewer() {
 
       {/* Right Panel */}
       <div style={{ width: '40%', height: '100%', display: 'flex', flexDirection: 'column' }} className="border-l-2">
-        {/* Top - TubeSheet Canvas */}
-        <div style={{ flex: 1 }} className="border-b-2 overflow-x-hidden">
+
+        
           <Canvas camera={{ position: CAMERA_POSITION, fov: 80 }}>
             <directionalLight castShadow position={[10, 20, 15]} intensity={0.8} />
             <ambientLight intensity={0.3} />
             <TubeSheet onHoleClick={handleHoleClick} />
+            {cardPosition && <DataCard position={cardPosition} data={cardData} />}
+            {selectedHole !== null && (
+              <Line points={[[selectedHole.position[0], selectedHole.position[1] + 75, selectedHole.position[2]], cardPosition]} color="blue" />
+            )}
             <OrbitControls enableZoom enablePan />
           </Canvas>
-        </div>
+          <Canvas camera={{ position: CAMERA_POSITION, fov: 80 }}>
+            <directionalLight castShadow position={[10, 20, 15]} intensity={0.8} />
+            <ambientLight intensity={0.3} />
+            <PlateWithCylindersUpper />
+            <PlateWithCylindersLower />
+            <OrbitControls enableZoom enablePan />
+          </Canvas>
+        
 
-        {/* Bottom Panel - Display Blockage Percentage */}
-        <div style={{ padding: '10px' }}>
-          <h3>Selected Hole Blockage Percentage:</h3>
 
-
-
-          <p>{selectedHole !== null ?
-            <>
-              <p>Blockage Percentage : {(selectedHole?.status * 100).toFixed(2)}%</p>
-              <p>Row : {selectedHole?.realRow + 1}</p>
-              <p> Col : {selectedHole?.realCol}</p>
-            </>
-            :
-            'Click a hole to see the blockage percentage.'}</p>
-        </div>
       </div>
     </div>
   );
