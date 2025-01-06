@@ -353,4 +353,50 @@ export const holeData = [
     { id: 352, status: 0.58 },
     { id: 353, status: 0.79 }
   ]
+
+// export const holeData= [
+//   {
+//     index: 0,
+//     position: [0, -74.9, 0],
+//     status: 0.2, // Blockage percentage
+//     realRow: 0,
+//     realCol: 0,
+//   },
+//   {
+//     index: 1,
+//     position: [1, -74.9, 0],
+//     status: 0.4,
+//     realRow: 0,
+//     realCol: 1,
+//   },
+//   {
+//     index: 2,
+//     position: [2, -74.9, 0],
+//     status: 0.1,
+//     realRow: 0,
+//     realCol: 2,
+//   },
+//   {
+//     index: 3,
+//     position: [0, -73.9, 0],
+//     status: 0.7,
+//     realRow: 1,
+//     realCol: 0,
+//   },
+//   {
+//     index: 4,
+//     position: [1, -73.9, 0],
+//     status: 0.3,
+//     realRow: 1,
+//     realCol: 1,
+//   },
+//   {
+//     index: 5,
+//     position: [2, -73.9, 0],
+//     status: 0.6,
+//     realRow: 1,
+//     realCol: 2,
+//   },
+//   // Add more hole data as needed
+// ];
   

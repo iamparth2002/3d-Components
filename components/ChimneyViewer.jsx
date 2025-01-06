@@ -17,7 +17,10 @@ function Hole({ position, status, onClick, realRow, realCol }) {
   return (
     <mesh
       position={position}
-      onClick={() => onClick({ status, position, realRow: invertedRow, realCol })}
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent event from bubbling up
+        onClick({ status, position, realRow: invertedRow, realCol });
+    }} 
       style={{ cursor: 'pointer' }} >
       <cylinderGeometry args={[0.2, 0.2, 150, 32]} />
       <meshStandardMaterial color={color} />
@@ -406,8 +409,8 @@ function ChimneyViewer() {
   const [cardPosition, setCardPosition] = useState(null);
   const [cardData, setCardData] = useState(null);
 
-  const handleHoleClick = (hole) => {
-    console.log(hole)
+  const handleHoleClick = ( hole) => {
+    console.log(hole);
     setSelectedHole(hole);
     setCardPosition([hole.position[0] + 7, hole.position[1] + 80, hole.position[2]]); // Adjust height as needed
     setCardData(hole);
