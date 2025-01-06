@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Circle, Html, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { holeData } from '@/data';
+import { cylinderData, holeData } from '@/data';
 
 // Hole Component
 function Hole({ position, status, onClick, realRow, realCol }) {
@@ -134,7 +134,6 @@ function TubeSheet({ onHoleClick }) {
     </group>
   );
 }
-
 
 // Chimney Base Component
 function ChimneyBase() {
@@ -272,16 +271,42 @@ function ChimneyBottomValve() {
 }
 
 // Plate with Cylinders Component
+function CylinderDataCard({ data }) {
+  return (
+    <Html position={[30,-10, 0]} style={{ transform: 'translate(-50%, -100%)' }}>
+      <div
+        style={{
+          background: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          width: '250px',
+          gap: '4px',
+        }}
+      >
+        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>Cylinder Data</h4>
+        <p style={{ margin: 0 }}>Location: {data.location}</p>
+        <p style={{ margin: 0 }}>Crack Percentage: {data.crackPercentage}%</p>
+        {/* <p style={{ margin: 0 }}>Temperature: {data.temperature}°C</p>
+        <p style={{ margin: 0 }}>Pressure: {data.pressure} PSI</p> */}
+        <p style={{ margin: 0 }}>Status: {data.status}</p>
+      </div>
+    </Html>
+  );
+}
 
 function PlateWithCylindersUpper() {
+  const [selectedCylinder, setSelectedCylinder] = useState(null);
   const CYLINDER_RADIUS = 2;
   const CYLINDER_HEIGHT = 8;
-  const CYLINDER_POSITIONS = Array.from({ length: 6 }).map((_, i) => {
-    const angle = (i * Math.PI) / 3;
-    const x = 7 * Math.cos(angle);
-    const z = 7 * Math.sin(angle);
-    return { x, z };
-  });
+
+  const handleCylinderClick = (cylinderData) => {
+    setSelectedCylinder(selectedCylinder?.id === cylinderData.id ? null : cylinderData);
+  };
 
   return (
     <group position={[0, 20, 0]}>
@@ -291,62 +316,68 @@ function PlateWithCylindersUpper() {
         <meshStandardMaterial color="red" side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Center Cylinder (Top Half) */}
-      <group position={[0, 0.5, 0]}>
-        <mesh position={[0, CYLINDER_HEIGHT / 4, 0]}>
-          <cylinderGeometry
-            args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-          />
-          <meshStandardMaterial color="#7e8487" side={THREE.DoubleSide} />
-        </mesh>
-      </group>
-
-      {/* Surrounding Cylinders (Top Half) */}
-      {CYLINDER_POSITIONS.map((pos, index) => (
-        <group key={index} position={[pos.x, 0.5, pos.z]}>
+      {/* All Cylinders (Top Half) */}
+      {cylinderData.map((cylinder) => (
+        <group 
+          key={cylinder.id} 
+          position={[cylinder.position.x, 0.5, cylinder.position.z]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCylinderClick(cylinder);
+          }}
+        >
           <mesh position={[0, CYLINDER_HEIGHT / 4, 0]}>
             <cylinderGeometry
               args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
             />
-            <meshStandardMaterial color="#7e8487" side={THREE.DoubleSide} />
+            <meshStandardMaterial 
+              color={selectedCylinder?.id === cylinder.id ? '#ff4444' : cylinder.color} 
+              side={THREE.DoubleSide} 
+            />
           </mesh>
+          {selectedCylinder?.id === cylinder.id && (
+            <CylinderDataCard data={cylinder} />
+          )}
         </group>
       ))}
     </group>
   );
 }
 
+
 function PlateWithCylindersLower() {
+  const [selectedCylinder, setSelectedCylinder] = useState(null);
   const CYLINDER_RADIUS = 2;
   const CYLINDER_HEIGHT = 8;
-  const CYLINDER_POSITIONS = Array.from({ length: 6 }).map((_, i) => {
-    const angle = (i * Math.PI) / 3;
-    const x = 7 * Math.cos(angle);
-    const z = 7 * Math.sin(angle);
-    return { x, z };
-  });
+
+  const handleCylinderClick = (cylinderData) => {
+    setSelectedCylinder(selectedCylinder?.id === cylinderData.id ? null : cylinderData);
+  };
 
   return (
     <group position={[0, 20, 0]}>
-      {/* Center Cylinder (Bottom Half) */}
-      <group position={[0, 0.5, 0]}>
-        <mesh position={[0, -CYLINDER_HEIGHT / 4, 0]}>
-          <cylinderGeometry
-            args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
-          />
-          <meshStandardMaterial color="#afb6ba" side={THREE.DoubleSide} />
-        </mesh>
-      </group>
-
-      {/* Surrounding Cylinders (Bottom Half) */}
-      {CYLINDER_POSITIONS.map((pos, index) => (
-        <group key={index} position={[pos.x, 0.5, pos.z]}>
+      {/* All Cylinders (Bottom Half) */}
+      {cylinderData.map((cylinder) => (
+        <group 
+          key={cylinder.id} 
+          position={[cylinder.position.x, 0.5, cylinder.position.z]}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCylinderClick(cylinder);
+          }}
+        >
           <mesh position={[0, -CYLINDER_HEIGHT / 4, 0]}>
             <cylinderGeometry
               args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT / 2, 64, 10, true]}
             />
-            <meshStandardMaterial color="#afb6ba" side={THREE.DoubleSide} />
+            <meshStandardMaterial 
+              color={selectedCylinder?.id === cylinder.id ? '#ff6666' : '#afb6ba'} 
+              side={THREE.DoubleSide} 
+            />
           </mesh>
+          {selectedCylinder?.id === cylinder.id && (
+            <CylinderDataCard data={cylinder} />
+          )}
         </group>
       ))}
     </group>
